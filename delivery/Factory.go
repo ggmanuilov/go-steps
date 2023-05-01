@@ -19,8 +19,8 @@ const (
 	PointMoscow  Point = 2
 )
 
-func PointsForCalc() []uint8 {
-	return []uint8{uint8(PointBarnaul), uint8(PointMoscow)}
+func PointsForCalc() []Point {
+	return []Point{PointBarnaul, PointMoscow}
 }
 
 type CalcParams struct {
@@ -39,7 +39,7 @@ type CalcResult struct {
 type IDelivery interface {
 	getCost() (float32, error)
 	getTime() (string, error)
-	Calculate(pointId Point, calcDeliveryResult chan DeliveryResult)
+	Calculate(pointId Point) (deliveryResult DeliveryResult)
 }
 
 // DeliveryPool считает с нескольких складов и отдает тот, где дешевле.

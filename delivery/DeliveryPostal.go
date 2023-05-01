@@ -17,9 +17,19 @@ func (d postal) getTime() (string, error) {
 	return "0 days", nil
 }
 
-func (d postal) Calculate(pointId Point, chResult chan DeliveryResult) {
+func (d postal) Calculate(pointId Point) (deliveryResult DeliveryResult) {
 
-	time.Sleep(100*time.Millisecond + time.Duration(pointId))
+	// Simulate when one delivery point unavailable.
+	/*
+		if pointId == PointMoscow {
+			return DeliveryResult{
+				CalcResult: CalcResult{},
+				Error:      errors.New("Msc unavailable"),
+			}
+		}*/
+
+	// Simulate
+	time.Sleep(100*time.Millisecond - time.Duration(pointId))
 
 	result := CalcResult{
 		Point: pointId,
@@ -27,7 +37,7 @@ func (d postal) Calculate(pointId Point, chResult chan DeliveryResult) {
 		Cost:  rand.Float32(),
 	}
 
-	chResult <- DeliveryResult{
+	return DeliveryResult{
 		CalcResult: result,
 		Error:      nil,
 	}
