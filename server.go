@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"shop-cart/delivery"
+	"shop-cart/requests"
 	"shop-cart/utils"
 
 	"github.com/brpaz/echozap"
@@ -39,17 +40,29 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
+	requests.CalcRegister(e)
+
 	e.GET("/delivery/calculate", func(c echo.Context) error {
+		// валидация
+		calcReq := new(requests.CalcReq)
+		if err = c.Bind(calcReq); err != nil {
+			return c.String(http.StatusBadRequest, "bad request")
+		}
+		if err = c.Validate(calcReq); err != nil {
+			return c.String(http.StatusBadRequest, err.Error())
+		}
+
+		// расчет стоимости
 		c.Logger().SetPrefix("/delivery/calculate")
 
 		params := delivery.CalcParams{
-			CountryIso:  643,
-			GateId:      "656008",
-			Weight:      1.357,
-			OrderAmount: 130.6,
+			CountryIso:  calcReq.CountryIso,
+			GateId:      calcReq.GateId,
+			Weight:      calcReq.Weight,
+			OrderAmount: calcReq.OrderAmount,
 		}
 
-		deliveryPool, err := delivery.Factory(delivery.TypePostal, params)
+		deliveryPool, err := delivery.Factory(calcReq.Type, params)
 		if err != nil {
 			c.Logger().Error(err)
 			return c.JSON(http.StatusBadRequest, err.Error())
