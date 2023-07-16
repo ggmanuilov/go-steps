@@ -12,3 +12,7 @@ curl http://localhost:8080/delivery/calculate?type=1&GateId=656008&weight=2.350&
 Пакеты:
 - echo
 - go-playground
+
+### CI
+
+- добавлена MultiStage сборка
