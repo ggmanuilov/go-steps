@@ -1,12 +1,13 @@
-FROM golang:1.20 AS builder
+FROM golang:1.24 AS builder
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app/server .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o delivery-server internal/server.go
 
-
-FROM alpine:3.18
-WORKDIR /opt/delivery/
-COPY --from=builder ./app/ .
-COPY --from=builder ./app/.env.example .env
+FROM alpine:3.21
+WORKDIR /opt/
+COPY --from=builder /app/delivery-server .
+COPY --from=builder /app/.env.example .env
+RUN apk --no-cache add ca-certificates
 EXPOSE 8080
-CMD ["./app/server"]
+ENV ENV_FILE=/opt/.env
+CMD ["./delivery-server"]

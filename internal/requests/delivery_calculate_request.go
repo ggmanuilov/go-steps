@@ -1,17 +1,20 @@
 package requests
 
 import (
+	"delivery/internal/types"
+
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 )
 
 type (
 	CalcReq struct {
-		Type        int8    `json:"Type" query:"Type" validate:"required,number,min=1,max=20"`
-		GateId      string  `json:"GateId" query:"GateId" validate:"required"`
-		CountryIso  uint16  `json:"CountryIso" query:"CountryIso" validate:"required,number"`
-		Weight      float32 `json:"Weight" query:"Weight" validate:"required,number"`
-		OrderAmount float32 `json:"OrderAmount" query:"OrderAmount" validate:"required,number"`
+		PointId      types.Point        `json:"PointId" query:"PointId" validate:"required,number,min=1,max=2"`
+		DeliveryType types.DeliveryType `json:"DeliveryType" query:"DeliveryType" validate:"required,number,min=1,max=20"`
+		PvzId        string             `json:"PvzId" query:"PvzId" validate:"required"`
+		CountryIso   uint16             `json:"CountryIso" query:"CountryIso" validate:"required,number"`
+		Weight       float32            `json:"Weight" query:"Weight" validate:"required,number"`
+		OrderAmount  float32            `json:"OrderAmount" query:"OrderAmount" validate:"required,number"`
 	}
 
 	calcValidator struct {

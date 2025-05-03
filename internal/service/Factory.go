@@ -1,68 +1,45 @@
-package delivery
+package service
 
 import (
+	"delivery/internal/requests"
+	"delivery/internal/types"
 	"fmt"
-	"net/http"
+	"os"
 )
-
-const (
-	TypePostal       int8 = 1
-	TypePostalOnline int8 = 14
-	TypeSdec         int8 = 11
-	TypeBoxberry     int8 = 25
-	TypeEuroset      int8 = 2
-)
-
-type Point uint8
-
-const (
-	PointBarnaul Point = 1
-	PointMoscow  Point = 2
-)
-
-func PointsForCalc() []Point {
-	return []Point{PointBarnaul, PointMoscow}
-}
-
-type CalcParams struct {
-	CountryIso  uint16
-	GateId      string
-	Weight      float32
-	OrderAmount float32
-}
-
-type CalcResult struct {
-	Point Point   // склад отправки посылки
-	Cost  float32 // стоимость доставки
-	Time  string  // время доставки
-}
 
 type IDelivery interface {
-	// getCost() (float32, error)
-	// getTime() (string, error)
-	Calculate(pointId Point, client *http.Client) (*DeliveryResult, error)
+	Calculate(params requests.CalcReq) *DeliveryResult
+}
+
+func PointsForCalc() []types.Point {
+	return []types.Point{types.PointBarnaul, types.PointMoscow}
 }
 
 // DeliveryPool считает с нескольких складов и отдает тот, где дешевле.
-func Factory(deliveryType int8, calcParams CalcParams) (DeliveryPool, error) {
-	var delivery IDelivery
-	client := &http.Client{}
+func Factory(deliveryType types.DeliveryType, delivery IDelivery) (DeliveryPool, error) {
+	// нужно для тестирования с моками реальных вызовов
+	if delivery != nil {
+		return DeliveryPool{Delivery: delivery}, nil
+	}
+
 	switch deliveryType {
-	case TypePostal:
-		delivery = newDeliveryPostal(calcParams, client)
-		// case POSTAL_ONLINE:
-		// 	return newDeliveryPostalOnline()
-		// case CDECK:
+	case types.GatePostal:
+		postalToken := os.Getenv("POSTAL_TOKEN")
+		postalPassword := os.Getenv("POSTAL_PASSWORD")
+		if postalToken == "" || postalPassword == "" {
+			panic("POSTAL_TOKEN or POSTAL_PASSWORD not set")
+		}
+
+		delivery = NewDeliveryPostal(postalToken, postalPassword)
+		// case types.CDECK:
 		// 	return newDeliveryCdeck()
-		// case BOXBERRY:
+		// case types.BOXBERRY:
 		// 	return newDeliveryBoxberry()
-		// case EUROSET:
-		// 	return newEuroset()
 	}
 
 	if delivery == nil {
-		return DeliveryPool{delivery: delivery}, fmt.Errorf("Wrong delivery type")
+		return DeliveryPool{Delivery: delivery}, fmt.Errorf("wrong delivery type %d", deliveryType)
 	}
 
-	return DeliveryPool{delivery: delivery}, nil
+	return DeliveryPool{Delivery: delivery}, nil
 }

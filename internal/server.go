@@ -1,81 +1,42 @@
 package main
 
 import (
+	"delivery/internal/pkg/app"
 	"fmt"
-	"net/http"
 	"os"
-	"shop-cart/internal/requests"
-	"shop-cart/internal/service"
-	"shop-cart/utils"
+	"os/signal"
+	"strconv"
+	"syscall"
 
-	"github.com/brpaz/echozap"
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 )
 
 func main() {
-	log, err := utils.InitializeLogger()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	handleSigterm()
+	app := app.New(nil)
+	app.LoadEnv()
+	app.Run()
+}
 
-	e := echo.New()
-	e.Use(echozap.ZapLogger(log))
+// Обработка сигналов завершения работы.
+// defer не работает есть получить SIGTERM.
+func handleSigterm() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		os.Interrupt,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func() {
+		sig := <-c // Ждем код завершения.
+		log.Infof("Got OS signal: %s\n", sig.String())
 
-	err = godotenv.Load()
-	if err != nil {
-		log.Error("Error loading .env file")
-	}
+		// Завершаем работу в сервисах.
+		// ...
 
-	// Learn connect redis to project.
-	// database, err := db.NewDatabase(os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"), os.Getenv("REDIS_PASSWORD"))
-	// if err != nil {
-	// 	log.Sugar().Errorf("Failed to connect to redis: %s", err.Error())
-	// }
-	// defer database.Client.Close()
-
-	e.GET("/", func(c echo.Context) error {
-		c.Logger().Debug('/')
-		return c.String(http.StatusOK, "Hello, World!")
-	})
-
-	requests.CalcRegister(e)
-
-	e.GET("/delivery/calculate", func(c echo.Context) error {
-		// валидация
-		calcReq := new(requests.CalcReq)
-		if err = c.Bind(calcReq); err != nil {
-			return c.String(http.StatusBadRequest, "bad request")
-		}
-		if err = c.Validate(calcReq); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
-		}
-
-		// расчет стоимости
-		c.Logger().SetPrefix("/delivery/calculate")
-
-		params := delivery.CalcParams{
-			CountryIso:  calcReq.CountryIso,
-			GateId:      calcReq.GateId,
-			Weight:      calcReq.Weight,
-			OrderAmount: calcReq.OrderAmount,
-		}
-
-		deliveryPool, err := delivery.Factory(calcReq.Type, params)
-		if err != nil {
-			c.Logger().Error(err)
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-
-		calcResult, err := deliveryPool.Calculate()
-		if err != nil {
-			c.Logger().Error(err)
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-
-		return c.JSON(http.StatusOK, calcResult)
-	})
-
-	e.Logger.Fatal(e.Start(":" + os.Getenv("APP_PORT")))
+		// Завершаем работу приложения.
+		siga, _ := strconv.Atoi(fmt.Sprintf("%d", sig))
+		os.Exit(siga)
+	}()
 }

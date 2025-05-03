@@ -1,0 +1,128 @@
+openapi: '3.0.2'
+info:
+  version: 1.0.0
+  title: API расчет стоимости доставки
+servers:
+  - url: http://localhost:8080
+paths:
+  /delivery/settings:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySettingResp'
+
+  /delivery/calculate:
+    get:
+      parameters:
+         - $ref: '#/components/parameters/Amount'
+         - $ref: '#/components/parameters/GateId'
+         - $ref: '#/components/parameters/CountryIso'
+         - $ref: '#/components/parameters/Type'
+         - $ref: '#/components/parameters/Weight'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryCalcResp'
+        '400':
+          description: Validation error
+
+components:
+  parameters:
+    Type:
+      in: query
+      name: Type
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 20
+    GateId:
+      in: query
+      name: GateId
+      required: true
+      schema:
+        type: string
+    CountryIso:
+      in: query
+      name: CountryIso
+      required: true
+      schema:
+        type: integer
+    Weight:
+      in: query
+      name: Weight
+      required: true
+      schema:
+        type: number
+    Amount:
+      in: query
+      name: Amount
+      required: true
+      schema:
+        type: number
+        minimum: 1
+        maximum: 20
+    
+  schemas:
+    DeliverySettingResp:
+      type: object
+      properties:
+        deliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Delivery'
+        deliveryZones:
+          type: array
+          items: 
+            $ref: '#/components/schemas/DeliveryZone'
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zone'
+
+    Zone:
+      type: object
+      properties:
+        id: 
+          type: integer
+        name: 
+          type: string
+
+    Delivery:
+      type: object
+      properties:
+        type:
+          type: integer
+        name:
+          type: string
+    
+    DeliveryZone:
+      type: object
+      properties:
+        type:
+          type: integer
+        name:
+          type: string  
+        zones:
+          type: array
+          items:
+            allOf:
+              - type: integer
+    
+    DeliveryCalcResp:
+      allOf:
+        - type: object
+          properties:
+            Cost:
+              type: number
+            time:
+              type: string
+            Point:
+              type: integer

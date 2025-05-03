@@ -9,7 +9,7 @@
           "type": "go",
           "request": "launch",
           "mode": "debug",
-          "program": "${workspaceFolder}/server.go"
+          "program": "${workspaceFolder}/internal/server.go"
         }
       ]
 }
