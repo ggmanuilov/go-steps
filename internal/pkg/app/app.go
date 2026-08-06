@@ -26,17 +26,33 @@ func New(middleware echo.MiddlewareFunc) *App {
 }
 
 func (app *App) LoadEnv() {
-	execPath, err := os.Executable()
-	if err != nil {
-		panic("Error getting executable path: " + err.Error())
+	// Приоритет источников окружения:
+	//   1. ENV_FILE (задаётся в Dockerfile и make run);
+	//   2. .env рядом с исполняемым файлом;
+	//   3. .env в рабочем каталоге (покрывает go run и запуск из корня).
+	candidates := []string{os.Getenv("ENV_FILE")}
+	if execPath, err := os.Executable(); err == nil {
+		candidates = append(candidates, filepath.Join(filepath.Dir(execPath), ".env"))
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		candidates = append(candidates, filepath.Join(cwd, ".env"))
 	}
 
-	execDir := filepath.Dir(execPath)
-	err = godotenv.Load(filepath.Join(execDir, ".env"))
-	if err != nil {
-		panic("Error loading .env file: " + err.Error())
+	for _, path := range candidates {
+		if path == "" {
+			continue
+		}
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+		if err := godotenv.Load(path); err != nil {
+			panic("Error loading .env file " + path + ": " + err.Error())
+		}
+		app.Echo.HideBanner = true
+		return
 	}
-	app.Echo.HideBanner = true
+
+	panic("Error loading .env: neither ENV_FILE nor .env found")
 }
 
 func (app *App) RegisterRoutes() {

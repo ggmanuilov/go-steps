@@ -19,9 +19,15 @@ type DeliveryResult struct {
 
 type ByMinimalCost []DeliveryResult
 
-func (dp ByMinimalCost) Len() int           { return len(dp) }
-func (dp ByMinimalCost) Less(i, j int) bool { return dp[i].CalcResult.Cost < dp[j].CalcResult.Cost }
-func (dp ByMinimalCost) Swap(i, j int)      { dp[i], dp[j] = dp[j], dp[i] }
+func (dp ByMinimalCost) Len() int { return len(dp) }
+func (dp ByMinimalCost) Less(i, j int) bool {
+	if dp[i].CalcResult.Cost != dp[j].CalcResult.Cost {
+		return dp[i].CalcResult.Cost < dp[j].CalcResult.Cost
+	}
+	// При равной стоимости доставки предпочитаем склад Москвы.
+	return dp[i].CalcResult.Point == types.PointMoscow && dp[j].CalcResult.Point != types.PointMoscow
+}
+func (dp ByMinimalCost) Swap(i, j int) { dp[i], dp[j] = dp[j], dp[i] }
 
 func (dp DeliveryPool) CalculateOne(params requests.CalcReq) *DeliveryResult {
 	return dp.Delivery.Calculate(params)
@@ -39,8 +45,9 @@ func (dp DeliveryPool) Calculate(params requests.CalcReq) *DeliveryResult {
 		go func(pointId types.Point) {
 			defer wg.Done()
 
-			params.PointId = pointId
-			result := dp.Delivery.Calculate(params)
+			paramsForPoint := params
+			paramsForPoint.PointId = pointId
+			result := dp.Delivery.Calculate(paramsForPoint)
 
 			mu.Lock()
 			if resultsCount < 2 {

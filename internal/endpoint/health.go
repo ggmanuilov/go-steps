@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -9,8 +10,18 @@ import (
 
 var (
 	startTime = time.Now()
-	version   = "1.0.0" // Брать из переменных окружения.
 )
+
+// version возвращает версию сервиса из переменной окружения APP_VERSION
+// (задаётся при сборке/деплое), с запасным значением по умолчанию.
+// Читается лениво — на каждый запрос, т.к. LoadEnv подгружает .env уже
+// после инициализации пакетов.
+func version() string {
+	if v := os.Getenv("APP_VERSION"); v != "" {
+		return v
+	}
+	return "1.0.0"
+}
 
 type HealthResponse struct {
 	Status    string    `json:"status"`
@@ -25,7 +36,7 @@ func Health(c echo.Context) error {
 	// Формируем ответ
 	response := HealthResponse{
 		Status:    status,
-		Version:   version,
+		Version:   version(),
 		Timestamp: time.Now(),
 		Uptime:    time.Since(startTime).String(),
 	}

@@ -38,26 +38,32 @@ func (d PostalGate) callApi(params requests.CalcReq) (*types.PostalCalcResp, err
 	req.Header.Set("Authorization", "AccessToken "+d.accessToken)
 	req.Header.Set("X-User-Authorization", "Basic "+d.loginPassword)
 
-	c := http.Client{Timeout: time.Duration(1) * time.Second}
-
-	res, err := c.Do(req)
+	res, err := sharedClient.Do(req)
 	if err != nil {
-		return &gateCalcResp, err
+		return &gateCalcResp, fmt.Errorf("postal gate: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return &gateCalcResp, fmt.Errorf("postal gate: unexpected status %d", res.StatusCode)
 	}
 
-	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		return &gateCalcResp, fmt.Errorf("postal gate: read body: %w", err)
 	}
 
 	err = json.Unmarshal(data, &gateCalcResp)
 	if err != nil {
-		return &gateCalcResp, err
+		return &gateCalcResp, fmt.Errorf("postal gate: unmarshal: %w", err)
 	}
 
 	return &gateCalcResp, nil
 }
+
+// sharedClient — общий HTTP-клиент без собственного таймаута: дедлайн задаёт
+// контекст запроса, чтобы был один источник правды о таймауте.
+var sharedClient = &http.Client{}
 
 func (d PostalGate) Calculate(params requests.CalcReq) *DeliveryResult {
 
@@ -74,7 +80,7 @@ func (d PostalGate) Calculate(params requests.CalcReq) *DeliveryResult {
 		CalcResult: types.CalcResult{
 			Point: types.Point(params.PointId),
 			Time:  fmt.Sprintf("%v days", gateCalcResp.Time),
-			Cost:  rand.Float32(),
+			Cost:  rand.Float32(), // todo это заглушка
 		},
 		Error: nil,
 	}

@@ -6,24 +6,21 @@
 
 Для локальной проверки вызвать:
 ```
-curl http://localhost:8080/delivery/calculate?Type=1&GateId=656008&Weight=2.350&CountryIso=643&OrderAmount=1202.30
+curl "http://localhost:8080/delivery/calculate?DeliveryType=1&PvzId=656008&PointId=1&CountryIso=643&Weight=2.350&OrderAmount=1202.30"
 ```
 
 Пакеты:
 - echo
 - go-playground
 
+### Тесты
+
+Контракт API задают приёмочные тесты (`tests/acceptance`): они собирают приложение через реальную фабрику и реестр маршрутов, поэтому проверяют и проводку `/delivery/calculate`:
+
+```
+make test
+```
+
 ### CI
 
 - добавлена MultiStage сборка
-
-### Кодегенерация OpenAPI
-
-```
- oapi-codegen -generate="types" -package delivery ./openapi/delivery.yml > internal/generated/Types.gen.go
-```
-
-### Источники
-
-- https://github.com/deepmap/oapi-codegen
-- https://gobyexample.com.ru/

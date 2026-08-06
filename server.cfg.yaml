@@ -1,7 +1,0 @@
-package: delivery
-output: internal/generated/server.gen.go
-generate:
-  embedded-spec: true
-  strict-server: true
-  models: true
-  echo-server: true
