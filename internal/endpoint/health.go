@@ -30,25 +30,20 @@ type HealthResponse struct {
 	Uptime    string    `json:"uptime"`
 }
 
+// /health — «процесс жив и HTTP-слой работает» (без зависимостей).
+// Отвечает всегда, даже если БД лежит — именно это позволяет отличать «упал сам сервис» от «упала зависимость».
 func Health(c echo.Context) error {
-	status := "healthy"
-
-	// Формируем ответ
-	response := HealthResponse{
-		Status:    status,
+	return c.JSON(http.StatusOK, HealthResponse{
+		Status:    "healthy",
 		Version:   version(),
 		Timestamp: time.Now(),
 		Uptime:    time.Since(startTime).String(),
-	}
-
-	if status != "healthy" {
-		return c.JSON(http.StatusServiceUnavailable, response)
-	}
-
-	return c.JSON(http.StatusOK, response)
+	})
 }
 
+// /readyz — «жив и готов принимать работу» (проверка зависимостей).
 func Readiness(c echo.Context) error {
+	// Readiness: готовность работать вместе с внешними зависимостями.
 	isReady := checkDatabaseConnection()
 
 	if isReady {

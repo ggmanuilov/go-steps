@@ -1,12 +1,15 @@
-version: '3'
 services:
   server:
     build:
       context: .
       dockerfile: Dockerfile.app
     ports:
-      - 8080:8080
-  redis:
-    image: redis:5
-    ports:
-      - "6380:6379"
+      - 8085:8085
+    environment:
+      - APP_PORT=8085
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8085/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 2
+      start_period: 5s
